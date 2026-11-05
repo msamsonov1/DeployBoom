@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeployBoom: Shape-Memory Alloy (SMA) Solar Boom Deployment Sentinel</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- MathJax Configuration -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #03050a;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .formula-box {
+      background: #020408;
+      border: 1px solid #1e293b;
+      border-radius: 0.5rem;
+      padding: 0.85rem 1.2rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      margin: 0.75rem 0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #05070d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .glow-cyan {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);
+    }
+    .glow-rose {
+      box-shadow: 0 0 15px rgba(244, 63, 94, 0.35);
+    }
+    .glow-amber {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.35);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#03050a] text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Top Global Header -->
+  <header class="border-b border-slate-800/80 bg-[#060913]/90 backdrop-blur sticky top-0 z-50 px-4 py-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-black font-bold shadow-lg shadow-cyan-500/20">
+          <i data-lucide="orbit" class="w-6 h-6 text-slate-950"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-lg font-bold tracking-tight text-white">DeployBoom<span class="text-cyan-400">™</span></span>
+            <span class="text-[10px] mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800">NASA SBIR S12.04</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">SMA Coiled Boom Deployment Sentinel &amp; Hysteresis Pulse Recovery System</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs sm:text-sm font-medium">
+        <button id="tabBtnSim" onclick="switchTab('sim')" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-cyan-400 bg-slate-800 shadow transition-all">
+          <i data-lucide="activity" class="w-4 h-4"></i>
+          <span>Live Sentinel HUD</span>
+        </button>
+        <button id="tabBtnPhysics" onclick="switchTab('physics')" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="cpu" class="w-4 h-4"></i>
+          <span>Phase Physics</span>
+        </button>
+        <button id="tabBtnProposal" onclick="switchTab('proposal')" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span>NASA Proposal</span>
+        </button>
+        <button id="tabBtnARR" onclick="switchTab('arr')" class="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="trending-up" class="w-4 h-4"></i>
+          <span>Commercial ARR</span>
+        </button>
+      </nav>
+
+      <!-- System Quick Status -->
+      <div class="hidden lg:flex items-center space-x-4 mono text-xs">
+        <div class="flex flex-col text-right">
+          <span class="text-slate-500 uppercase text-[10px]">Sentinel Core</span>
+          <span id="quickStatusBadge" class="text-emerald-400 font-semibold flex items-center justify-end gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> NOMINAL AUTONOMY
+          </span>
+        </div>
+        <div class="border-l border-slate-800 pl-4 flex flex-col text-right">
+          <span class="text-slate-500 uppercase text-[10px]">Watchdog Loop</span>
+          <span class="text-cyan-400 font-semibold">25 Hz REALTIME</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+    <!-- ============================================================== -->
+    <!-- TAB 1: LIVE SIMULATION & TELEMETRY HUD                          -->
+    <!-- ============================================================== -->
+    <div id="viewSim" class="space-y-6">
+      
+      <!-- Top Sentinel Status Banner -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 backdrop-blur">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span>Austenitic Phase $\theta$</span>
+            <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="statTheta" class="text-2xl font-bold mono text-white">0.12</span>
+            <span class="text-xs mono text-cyan-400">rad / frac (12%)</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div id="barTheta" class="bg-cyan-400 h-full w-[12%] transition-all duration-100"></div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 backdrop-blur">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span>Boom Recovery Force $F$</span>
+            <i data-lucide="gauge" class="w-4 h-4 text-amber-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="statForce" class="text-2xl font-bold mono text-white">18.4</span>
+            <span class="text-xs mono text-amber-400">N (Min Latch: 85 N)</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div id="barForce" class="bg-amber-400 h-full w-[18%] transition-all duration-100"></div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 backdrop-blur">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span>SMA Trigger Wire Temp</span>
+            <i data-lucide="thermometer" class="w-4 h-4 text-rose-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="statTemp" class="text-2xl font-bold mono text-white">142</span>
+            <span class="text-xs mono text-rose-400">K (Austenite $A_f$: 345 K)</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div id="barTemp" class="bg-rose-400 h-full w-[35%] transition-all duration-100"></div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 backdrop-blur">
+          <div class="flex items-center justify-between text-slate-400 text-xs">
+            <span>Sentinel Auto-Intervention</span>
+            <i data-lucide="zap" class="w-4 h-4 text-violet-400"></i>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between">
+            <span id="statPulses" class="text-2xl font-bold mono text-violet-300">STANDBY</span>
+            <span id="statPulseCount" class="text-xs mono text-slate-400">0 Pulses Fired</span>
+          </div>
+          <div class="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div id="barPulses" class="bg-violet-500 h-full w-0 transition-all duration-100"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Interactive Row: Canvas + Phase Chart -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left: Boom Mechanical Simulation Canvas (7 Cols) -->
+        <div class="lg:col-span-7 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+              <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-200">Spacecraft Deployment Bay &amp; SMA Coiled Boom</h2>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span id="simStateTag" class="text-[11px] mono px-2.5 py-0.5 rounded-full bg-blue-900/40 border border-blue-700/60 text-blue-300">
+                STOWED IN CANISTER
+              </span>
+            </div>
+          </div>
+
+          <!-- The Canvas -->
+          <div class="relative w-full h-[320px] rounded-xl overflow-hidden bg-[#030611] border border-slate-800/80">
+            <canvas id="boomCanvas" class="w-full h-full block"></canvas>
+            
+            <!-- In-Canvas Overlays -->
+            <div class="absolute top-3 left-3 bg-slate-950/80 border border-slate-800/90 rounded-lg p-2.5 mono text-[11px] space-y-1 backdrop-blur pointer-events-none">
+              <div class="text-slate-400 flex justify-between gap-4">
+                <span>BOOM EXTENSION:</span>
+                <span id="hudExtension" class="text-cyan-300 font-bold">0.08 m / 6.00 m</span>
+              </div>
+              <div class="text-slate-400 flex justify-between gap-4">
+                <span>THERMAL SHADOW:</span>
+                <span id="hudShadow" class="text-slate-300">PENUMBRA (80 K)</span>
+              </div>
+              <div class="text-slate-400 flex justify-between gap-4">
+                <span>LATCH MECHANISM:</span>
+                <span id="hudLatch" class="text-amber-400">DISENGAGED (PIN UNSEATED)</span>
+              </div>
+            </div>
+
+            <div id="hudPulseAlert" class="absolute bottom-3 right-3 hidden bg-violet-950/90 border border-violet-500 rounded-lg px-3 py-2 text-xs mono text-violet-200 flex items-center space-x-2 animate-bounce">
+              <i data-lucide="zap" class="w-4 h-4 text-violet-400"></i>
+              <span>SENTINEL INJECTING RECOVERY PULSE (34A)</span>
+            </div>
+          </div>
+
+          <!-- Controls Bar Under Canvas -->
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button id="btnStartDeploy" onclick="toggleDeployment()" class="flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-all shadow-lg shadow-cyan-500/20">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              <span id="btnStartDeployText">Initiate Solar Deployment</span>
+            </button>
+            <button onclick="injectShadowAnomaly()" class="flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm text-amber-200 bg-amber-950/50 hover:bg-amber-900/60 border border-amber-800/60 transition-all">
+              <i data-lucide="cloud-rain" class="w-4 h-4 text-amber-400"></i>
+              <span>Inject Deep-Space Cold Stall</span>
+            </button>
+            <button onclick="resetSimulation()" class="flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all">
+              <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              <span>Reset Deployment</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Diagnostic Phase Space Chart (5 Cols) -->
+        <div class="lg:col-span-5 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-200">Diagnostic Phase Space $(F, \theta)$</h2>
+              <span class="text-[10px] mono text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-2 py-0.5 rounded">HYSTERESIS SENTINEL</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">Mechanical Recovery Force $F$ (N) vs. Austenitic Phase Fraction $\theta$ (rad).</p>
+          </div>
+
+          <div class="relative w-full h-[270px] bg-[#02050e] rounded-xl p-2 border border-slate-800/80">
+            <canvas id="hysteresisChart"></canvas>
+          </div>
+
+          <!-- Explanatory note below chart -->
+          <div class="mt-3 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/70 text-[11px] text-slate-400 flex items-start space-x-2">
+            <i data-lucide="info" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+            <span>
+              <strong class="text-slate-200">Autonomous Sentinel Rule:</strong> If phase angle recovery $\theta$ halts below 0.78 rad inside the shaded hazard corridor, secondary multi-joule pulse rails force thermal breakthrough into full austenite latch.
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Secondary Telemetry Plots & Watchdog Controls -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- Plot 1: Force & Strain Sensor Time Series (4 cols) -->
+        <div class="md:col-span-4 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-semibold uppercase text-slate-300">Force &amp; Sensor Stress ($F$)</h3>
+            <span class="text-[10px] mono text-amber-400">Embedded FBG / Strain</span>
+          </div>
+          <div class="h-[170px] bg-[#02050e] rounded-xl p-2 border border-slate-800/80">
+            <canvas id="forceTimeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Plot 2: Thermal & Sentinel Heating Pulses (4 cols) -->
+        <div class="md:col-span-4 bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-semibold uppercase text-slate-300">Temperature &amp; Current Injection</h3>
+            <span class="text-[10px] mono text-violet-400">PWM Pulse Rails</span>
+          </div>
+          <div class="h-[170px] bg-[#02050e] rounded-xl p-2 border border-slate-800/80">
+            <canvas id="tempTimeChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Observer State Control & Parameters (4 cols) -->
+        <div class="md:col-span-4 bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-semibold uppercase text-slate-300">Sentinel Software Watchdog</h3>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggleAutoSentinel" checked class="sr-only peer">
+                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+              </label>
+            </div>
+            
+            <!-- Sliders for interactive tuning -->
+            <div class="space-y-2 pt-1">
+              <div>
+                <div class="flex justify-between text-[11px] mono text-slate-400 mb-1">
+                  <span>Deep Space Shadow Temp:</span>
+                  <span id="valAmbient" class="text-cyan-300">80 K</span>
+                </div>
+                <input type="range" id="sliderAmbient" min="40" max="220" value="80" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400" oninput="updateEnvironment()">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] mono text-slate-400 mb-1">
+                  <span>Critical Latch Lock Force ($F_{req}$):</span>
+                  <span class="text-amber-300">85.0 N</span>
+                </div>
+                <input type="range" id="sliderLatchForce" min="60" max="110" value="85" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-400" oninput="updateLatchReq(this.value)">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-[11px] mono text-slate-400 mb-1">
+                  <span>Secondary Heating Pulse Current:</span>
+                  <span id="valPulseAmp" class="text-violet-300">32.0 A (85 ms)</span>
+                </div>
+                <input type="range" id="sliderPulseAmp" min="15" max="45" value="32" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-400" oninput="document.getElementById('valPulseAmp').innerText = this.value + '.0 A (85 ms)'">
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800 text-[11px] flex items-center justify-between">
+            <span class="text-slate-400">Autonomous Re-Route Trigger:</span>
+            <span class="mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">ARMED</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB 2: CORE PHYSICS & MATHEMATICAL MODEL                        -->
+    <!-- ============================================================== -->
+    <div id="viewPhysics" class="hidden space-y-6">
+      
+      <!-- Physics Banner -->
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-950/40 via-cyan-950/30 to-slate-900/40 border border-cyan-900/50 flex items-start space-x-4">
+        <div class="p-3 bg-cyan-900/30 border border-cyan-700/50 rounded-xl text-cyan-400">
+          <i data-lucide="atom" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-white">Nonlinear SMA Constitutive Dynamics &amp; Phase Hysteresis Sentinel</h2>
+          <p class="text-sm text-slate-300 mt-1">
+            Coiled shape-memory alloy (SMA) boom actuators undergo sub-surface martensite-to-austenite shear transformations. 
+            In deep-space thermal gradients (e.g. shadowed planetary occultations at 80 K), partial phase crystallization causes 
+            mechanical stalls before physical micro-latching. DeployBoom continuously monitors the dynamic $(F, \theta)$ trajectory 
+            to invert and eliminate phase locks.
+          </p>
+        </div>
+      </div>
+
+      <!-- 4 Cards Architecture -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Card 1: Governing Constitutive Equations -->
+        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 text-cyan-400 text-sm font-semibold mb-2">
+              <i data-lucide="binary" class="w-4 h-4"></i>
+              <span>1. SMA Macroscopic Thermomechanical Law (Brinson-Tanaka)</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              The internal mechanical stress $\sigma$ and resultant boom recovery deployment force $F(t)$ are governed by 
+              elastic modulus $D(\xi)$, mechanical strain $\varepsilon$, transformation tensor $\Omega(\xi)$, and thermal expansion coefficient $\Theta$:
+            </p>
+
+            <div class="formula-box">
+              $$\sigma - \sigma_0 = D(\xi)(\varepsilon - \varepsilon_0) + \Omega(\xi)(\xi_S - \xi_{S0}) + \Theta(T - T_0)$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              Where total martensite fraction $\xi = \xi_S + \xi_T$ decouples into stress-induced detwinned martensite $\xi_S$ and 
+              temperature-induced twinned martensite $\xi_T$. The net recovery force driving the composite coiled slit-tube boom is:
+            </p>
+
+            <div class="formula-box">
+              $$F_{\text{recovery}}(t) = \kappa_{\text{geom}} \int_{A} \sigma(r, \theta_{\text{SMA}}, T) \, dA - F_{\text{friction}}(\dot{x})$$
+            </div>
+          </div>
+          <div class="text-[11px] mono text-slate-500 border-t border-slate-800/80 pt-2 mt-2">
+            Nonlinear geometric stiffness coefficient: $\kappa_{\text{geom}} = \frac{E I_{\text{slit}}}{L_{\text{boom}}^2 (1 - \nu^2)}$
+          </div>
+        </div>
+
+        <!-- Card 2: Microscopic Martensitic Phase Transition -->
+        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 text-cyan-400 text-sm font-semibold mb-2">
+              <i data-lucide="network" class="w-4 h-4"></i>
+              <span>2. Crystallographic Phase Fraction &amp; Thermal Shadow Stalls</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              As resistive current passes through the embedded NiTiNOL trigger wire, conversion from monoclinic B19' (martensite) to 
+              cubic B2 (austenite) commences at $A_s$ (Austenite Start) and concludes at $A_f$ (Austenite Finish) under forward kinetics:
+            </p>
+
+            <div class="formula-box">
+              $$\xi = \frac{\xi_0}{2} \left\{ \cos\left[ \frac{\pi}{A_f - A_s}\left( T - A_s - \frac{\sigma}{C_A} \right) \right] + 1 \right\}$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              Deep space radiative losses ($q_{\text{rad}} = \epsilon \sigma_{\text{SB}} (T^4 - T_{\text{space}}^4)$) inside penumbral shadows create local thermal pin-down where $T < A_s + \sigma / C_A$. At this boundary, phase conversion freezes at intermediate $\theta^*$, halting force generation below the latching threshold.
+            </p>
+
+            <div class="formula-box">
+              $$\theta_{\text{phase}} = \arccos(2\xi - 1) \quad \text{such that} \quad \left.\frac{d\theta}{dt}\right|_{\text{stall}} \to 0 \quad (\sigma < \sigma_{\text{latch}})$$
+            </div>
+          </div>
+          <div class="text-[11px] mono text-slate-500 border-t border-slate-800/80 pt-2 mt-2">
+            Phase stress influence coefficient: $C_A \approx 8.2\text{ MPa/K}$, $A_f = 345\text{ K}$, $A_s = 312\text{ K}$.
+          </div>
+        </div>
+
+        <!-- Card 3: Diagnostic State Observer & Inversion Algorithm -->
+        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 text-cyan-400 text-sm font-semibold mb-2">
+              <i data-lucide="line-chart" class="w-4 h-4"></i>
+              <span>3. Dynamic Hysteresis Observer &amp; Anomaly Detection</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Embedded magnetic permeability sensors measure crystalline susceptibility ($\chi_m(t) \propto 1 - \xi$) while fiber Bragg grating (FBG) arrays measure force-induced strain $\varepsilon_{\text{FBG}}$. The flight sentinel computes phase coordinate $\mathbf{x} = [\theta, F]^T$:
+            </p>
+
+            <div class="formula-box">
+              $$\mathcal{H}(\theta, F) = F - \left[ F_{\text{min}} + (F_{\text{latch}} - F_{\text{min}}) \frac{1}{1 + e^{-\beta(\theta - \theta_{\text{mid}})}} \right]$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              The Lyapunov-stable fault condition triggers when phase velocity vanishes outside the nominal boundary:
+            </p>
+
+            <div class="formula-box">
+              $$\Psi_{\text{anomaly}} = \mathbb{I}\left( \left|\frac{d\theta}{dt}\right| < \epsilon_{\theta} \;\land\; F(t) < F_{\text{latch\_min}} \;\land\; t_{\text{heat}} > \tau_{\text{crit}} \right)$$
+            </div>
+          </div>
+          <div class="text-[11px] mono text-slate-500 border-t border-slate-800/80 pt-2 mt-2">
+            Observer execution rate: 25 Hz deterministic cyclic interrupt with zero float division overhead.
+          </div>
+        </div>
+
+        <!-- Card 4: Micro-Fabrication, Substrates & Hardware Specs -->
+        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 text-cyan-400 text-sm font-semibold mb-2">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+              <span>4. Substrate Coiling &amp; Secondary Current Injection</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              When $\Psi_{\text{anomaly}} = 1$, the flight FPGA re-routes secondary high-current pulse trains from dedicated ultra-capacitor banks to the high-resistance NiTiNOL hinge cores, bypassing primary thermal dissipation rails:
+            </p>
+
+            <div class="formula-box">
+              $$Q_{\text{pulse}} = \int_0^{\Delta t_{\text{pulse}}} I_2^2(t) R_{\text{SMA}}(T) \, dt = m c_p \Delta T_{\text{overcome}} + Q_{\text{latent}}$$
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed mt-2">
+              The high $dI/dt$ instantaneous dissipation elevates the cold spot boundary past $A_f$ in under 120 ms, generating an additional $\Delta F = +35\text{ N}$ of impulsive recovery force, driving mechanical detents past spring-loaded latching pawls.
+            </p>
+
+            <div class="formula-box">
+              $$\Delta F_{\text{impulse}} = \Omega_A \cdot A_{\text{wire}} \cdot \Delta \xi_{\text{forced}} \ge F_{\text{friction\_max}} + F_{\text{spring\_preload}}$$
+            </div>
+          </div>
+          <div class="text-[11px] mono text-slate-500 border-t border-slate-800/80 pt-2 mt-2">
+            Pulse architecture: Gallium Nitride (GaN) HEMT switches rated for 60 V, 40 A at radiation tolerance &gt; 100 krad(Si).
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB 3: $225,000 NASA SBIR PROPOSAL & HARDWARE TRANSITION       -->
+    <!-- ============================================================== -->
+    <div id="viewProposal" class="hidden space-y-6">
+      
+      <!-- Solicitation & Topic Alignment -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 to-slate-900/60 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="px-2.5 py-0.5 rounded text-xs font-bold mono bg-cyan-900/60 text-cyan-300 border border-cyan-700">NASA SBIR 2026 Phase I</span>
+            <span class="text-xs text-slate-400 mono">Focus Area: Deployable Structures, Materials, and Mechanical Mechanisms</span>
+          </div>
+          <h2 class="text-xl font-bold text-white mt-1">Autonomous Dynamic Phase Sentinel for Deep-Space SMA Boom Deployment</h2>
+          <p class="text-xs text-slate-300 mt-0.5">Topic: S12.04 Deployable Antennas, Optical Radomes, and Large Solar Boom Arrays</p>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-2xl font-black mono text-cyan-400">$225,000</div>
+          <div class="text-xs text-slate-400">Total Phase I Direct Budget (6 Mos)</div>
+        </div>
+      </div>
+
+      <!-- STTR Subcontract Allocation Callout -->
+      <div class="p-4 rounded-xl bg-violet-950/30 border border-violet-800/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-violet-900/50 text-violet-300 border border-violet-700">
+            <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-white">Academic Subcontract Partner: University of Central Florida (UCF)</div>
+            <div class="text-xs text-slate-300">Center for Advanced Turbomachinery and Energy Research (CATER) &amp; Space Cryogenics Lab</div>
+          </div>
+        </div>
+        <div class="mono text-right bg-violet-900/40 px-3 py-1.5 rounded-lg border border-violet-700/60">
+          <span class="text-xs text-slate-400">STTR Direct Allocation: </span>
+          <span class="text-sm font-bold text-violet-200">30.0% ($67,500)</span>
+        </div>
+      </div>
+
+      <!-- Work Breakdown Structure (Months 1 - 6) -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="text-xs mono text-cyan-400 font-bold mb-1">MILESTONE 1 (M1-M2)</div>
+            <h3 class="text-sm font-semibold text-white mb-2">Kinetic Modeling &amp; Hysteresis Mapping</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Formulate 3D finite-element Brinson phase transformation code coupled with cryogenic radiative equilibrium models inside deep shadows.
+            </p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 text-[11px] mono text-slate-500">
+            Lead: UCF CATER Lab ($22.5k)
+          </div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="text-xs mono text-cyan-400 font-bold mb-1">MILESTONE 2 (M3-M4)</div>
+            <h3 class="text-sm font-semibold text-white mb-2">State Observer Inversion Algorithm</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Synthesize real-time C code for $(F, \theta)$ observer executing on radiation-hardened Microchip PolarFire FPGA core running at 25 Hz.
+            </p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 text-[11px] mono text-slate-500">
+            Lead: DeployBoom Prime ($25.0k)
+          </div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="text-xs mono text-cyan-400 font-bold mb-1">MILESTONE 3 (M5)</div>
+            <h3 class="text-sm font-semibold text-white mb-2">Cryogenic Vacuum Testing</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Deploy a 1.5-meter subscale coiled slit-tube boom inside UCF liquid nitrogen shroud chamber (77 K, $10^{-6}\text{ Torr}$) with intentional cold-spot shadowing.
+            </p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 text-[11px] mono text-slate-500">
+            Joint: UCF TVAC Facility ($45.0k)
+          </div>
+        </div>
+
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="text-xs mono text-cyan-400 font-bold mb-1">MILESTONE 4 (M6)</div>
+            <h3 class="text-sm font-semibold text-white mb-2">Phase II Hardware Architecture</h3>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Deliver fully validated closed-loop sentinel flight firmware package, GaN pulsed driver board schematics, and Phase II demonstration roadmap.
+            </p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 text-[11px] mono text-slate-500">
+            Lead: DeployBoom Prime ($20.0k)
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Phase II Transition & Flight Insertion Roadmap -->
+      <div class="bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
+        <h3 class="text-base font-bold text-white mb-2">NASA Phase II Transition &amp; Deep-Space Mission Roadmap</h3>
+        <p class="text-xs text-slate-300 leading-relaxed mb-4">
+          Following Phase I validation, the Phase II proposal ($950,000) fabricates engineering-model (EM) 6-meter deployable coiled booms 
+          integrated with space-rated GaN pulsed drivers. Targeted NASA mission architectures include Artemis Lunar Surface Antenna masts, 
+          Uranus Orbiter &amp; Probe magnetometer booms, and Habitable Worlds Observatory (HWO) starlight suppression truss deployment.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mono">
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+            <div class="text-cyan-400 font-bold mb-1">TRL 3 &rarr; TRL 5</div>
+            <div class="text-slate-400">Cryogenic TVAC thermal stall recovery demonstrated in flight-like coiled form factor.</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+            <div class="text-cyan-400 font-bold mb-1">MASS PENALTY &lt; 2.2%</div>
+            <div class="text-slate-400">Software-centric architecture leverages existing telemetry lines and secondary bus capacitors.</div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+            <div class="text-cyan-400 font-bold mb-1">NASA CENTERS</div>
+            <div class="text-slate-400">Collaboration pathway with NASA Langley (LaRC) &amp; Jet Propulsion Laboratory (JPL).</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- TAB 4: COMMERCIAL & NATIONWIDE ARR BREAKDOWN                    -->
+    <!-- ============================================================== -->
+    <div id="viewARR" class="hidden space-y-6">
+      
+      <!-- Executive Summary Card -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-slate-900/60 to-violet-950/40 border border-cyan-800/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs mono uppercase tracking-wider text-cyan-400 font-semibold">Executive Market Summary</span>
+          <h2 class="text-xl font-bold text-white mt-1">Autonomous Shape-Memory Actuator Sentinel Software: $214.2M Civil ARR</h2>
+          <p class="text-xs text-slate-300 max-w-3xl mt-1">
+            Beyond deep-space booms, shape-memory alloys (SMA) are rapidly replacing heavy hydraulic and electromechanical solenoids 
+            across civil commercial aviation, commercial space constellations, subsea energy valves, and surgical robotics. DeployBoom 
+            licenses pure runtime software monitoring $(F, \theta)$ hysteresis to eliminate catastrophic freeze stalls.
+          </p>
+        </div>
+        <div class="text-right shrink-0 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-400">Projected Valuation (10x ARR)</div>
+          <div class="text-2xl font-black mono text-emerald-400">$2.14 Billion</div>
+        </div>
+      </div>
+
+      <!-- ARR Distribution Table -->
+      <div class="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+          <h3 class="text-sm font-semibold uppercase text-slate-200">Commercial Civil Vertical Distribution</h3>
+          <span class="text-xs mono text-cyan-400 font-bold">Total ARR: $214.2M Nationwide</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/80 text-slate-400 uppercase text-[10px] mono border-b border-slate-800">
+              <tr>
+                <th class="p-3">Commercial Vertical</th>
+                <th class="p-3">Specific Actuator / Mechanism</th>
+                <th class="p-3">Software Runtime SaaS Fee</th>
+                <th class="p-3">Nationwide Asset Base</th>
+                <th class="p-3 text-right">Mature ARR</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 mono text-slate-300">
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="satellite" class="w-3.5 h-3.5 text-cyan-400"></i>
+                  Commercial LEO Constellations
+                </td>
+                <td class="p-3 font-sans">Solar Array &amp; Ka-Band Reflector Release</td>
+                <td class="p-3 text-cyan-300">$3,200 / satellite / yr</td>
+                <td class="p-3">18,500 active satellites</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$59.2M</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="plane" class="w-3.5 h-3.5 text-blue-400"></i>
+                  Civil Aviation &amp; Cargo Drones
+                </td>
+                <td class="p-3 font-sans">Variable Area Jet Exhaust &amp; Winglet Flaps</td>
+                <td class="p-3 text-cyan-300">$1,850 / engine / yr</td>
+                <td class="p-3">28,000 commercial engines</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$51.8M</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>
+                  Utility-Scale Solar Trackers
+                </td>
+                <td class="p-3 font-sans">Thermal SMA Wind-Stow Safety Dampers</td>
+                <td class="p-3 text-cyan-300">$45 / tracker row / yr</td>
+                <td class="p-3">1,100,000 utility rows</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$49.5M</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="activity" class="w-3.5 h-3.5 text-rose-400"></i>
+                  Robotic Surgical Instrumentation
+                </td>
+                <td class="p-3 font-sans">Articulated Arthroscopic SMA Steerable Needles</td>
+                <td class="p-3 text-cyan-300">$420 / procedure suite / mo</td>
+                <td class="p-3">5,800 hospital surgical suites</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$29.2M</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30 transition-colors">
+                <td class="p-3 font-semibold text-white flex items-center gap-2">
+                  <i data-lucide="anchor" class="w-3.5 h-3.5 text-violet-400"></i>
+                  Subsea Cryo Valves &amp; Geothermal
+                </td>
+                <td class="p-3 font-sans">Non-Explosive Wellhead Blowout Isolation</td>
+                <td class="p-3 text-cyan-300">$8,500 / wellhead / yr</td>
+                <td class="p-3">2,900 deepwater subsea wells</td>
+                <td class="p-3 text-right font-bold text-emerald-400">$24.5M</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Industry Deep Dive Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Deep Dive 1: Commercial LEO -->
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold text-cyan-400 mb-1">
+              <span>COMMERCIAL SATELLITE CONSTELLATIONS</span>
+              <span class="mono">$59.2M ARR</span>
+            </div>
+            <p class="text-xs text-slate-300 mb-2">
+              <strong>Physics in 1 Sentence:</strong> When transitioning through Earth's umbra at orbital speed (7.8 km/s), rapid radiative cooling creates unpredictable structural thermal gradients across deploying solar wings.
+            </p>
+            <p class="text-xs text-slate-400">
+              <strong>Why Others Missed This (Plain English):</strong> Incumbents rely on dumb timed electrical heaters that heat blindly. If a latch freezes mid-stroke, standard timers shut off, stranding the panel half-opened and dooming the mission.
+            </p>
+          </div>
+        </div>
+
+        <!-- Deep Dive 2: Aviation -->
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold text-blue-400 mb-1">
+              <span>CIVIL COMMERCIAL AVIATION</span>
+              <span class="mono">$51.8M ARR</span>
+            </div>
+            <p class="text-xs text-slate-300 mb-2">
+              <strong>Physics in 1 Sentence:</strong> High altitude cold-soak (-55°C) increases the critical stress required for detwinned martensite reorientation by over 40% compared to ground testing.
+            </p>
+            <p class="text-xs text-slate-400">
+              <strong>Why Others Missed This (Plain English):</strong> Airlines replaced heavy hydraulic lines with light smart-metal wires but experienced occasional uncommanded aerodynamic stalls because ambient windchill stole the actuator's heat.
+            </p>
+          </div>
+        </div>
+
+        <!-- Deep Dive 3: Solar Trackers -->
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold text-amber-400 mb-1">
+              <span>UTILITY SOLAR TRACKERS</span>
+              <span class="mono">$49.5M ARR</span>
+            </div>
+            <p class="text-xs text-slate-300 mb-2">
+              <strong>Physics in 1 Sentence:</strong> In sub-zero hail storms, ambient freeze locks thermal dampers, preventing rows from rotating into the aerodynamic wind-stow angle before wind shear buckles the torque tube.
+            </p>
+            <p class="text-xs text-slate-400">
+              <strong>Why Others Missed This (Plain English):</strong> Operators assumed passive passive metals never jam, but when freezing rain creates thermal pin-down, dynamic pulse assist is the only way to avoid multi-million dollar windstorms.
+            </p>
+          </div>
+        </div>
+
+        <!-- Deep Dive 4: Surgical Robotics -->
+        <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-bold text-rose-400 mb-1">
+              <span>ROBOTIC SURGERY</span>
+              <span class="mono">$29.2M ARR</span>
+            </div>
+            <p class="text-xs text-slate-300 mb-2">
+              <strong>Physics in 1 Sentence:</strong> Saline fluid cooling during minimally invasive procedures causes asymmetric austenite transformation along microscopic 0.2 mm steering wires.
+            </p>
+            <p class="text-xs text-slate-400">
+              <strong>Why Others Missed This (Plain English):</strong> Robotic consoles experienced sluggish tip latency and jerky snapping; our observer predicts cooling losses and compensates with high-frequency micro-pulses for silky steering.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Collaboration Call to Action Banner -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950/40 to-cyan-950/50 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h4 class="text-sm font-bold text-white">Commercial Licensing &amp; Flight Code Integration</h4>
+          <p class="text-xs text-slate-400 mt-0.5">Integrate DeployBoom C-library sentinel firmware into your flight or embedded FPGA flight computer.</p>
+        </div>
+        <a href="mailto:support@rfwavecode.com" class="px-5 py-2.5 rounded-xl bg-cyan-400 text-slate-950 font-semibold text-xs mono flex items-center space-x-2 hover:bg-cyan-300 transition-colors shadow-lg shadow-cyan-500/20">
+          <i data-lucide="mail" class="w-4 h-4"></i>
+          <span>support@rfwavecode.com</span>
+        </a>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#020409] py-4 px-4 text-center text-xs text-slate-500 mono">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>DeployBoom™ Sentinel Software &bull; NASA SBIR Topic S12.04</div>
+      <div class="flex items-center space-x-4">
+        <span>Deterministic 25 Hz Watchdog</span>
+        <span>TRL 4 Validated</span>
+        <a href="mailto:support@rfwavecode.com" class="text-cyan-400 hover:underline">Contact Engineering</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- JAVASCRIPT: SIMULATION, CHARTS, AND SENTINEL WATCHDOG          -->
+  <!-- ============================================================== -->
+  <script>
+    // Initialize Lucide Icons immediately
+    lucide.createIcons();
+
+    // -------------------------------------------------------------
+    // Tab Switching Architecture (Bulletproof mapping)
+    // -------------------------------------------------------------
+    const tabMapping = {
+      'sim': { viewId: 'viewSim', btnId: 'tabBtnSim' },
+      'physics': { viewId: 'viewPhysics', btnId: 'tabBtnPhysics' },
+      'proposal': { viewId: 'viewProposal', btnId: 'tabBtnProposal' },
+      'arr': { viewId: 'viewARR', btnId: 'tabBtnARR' }
+    };
+
+    function switchTab(targetKey) {
+      Object.keys(tabMapping).forEach(key => {
+        const item = tabMapping[key];
+        const viewEl = document.getElementById(item.viewId);
+        const btnEl = document.getElementById(item.btnId);
+
+        if (key === targetKey) {
+          viewEl.classList.remove('hidden');
+          btnEl.className = 'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-cyan-400 bg-slate-800 shadow transition-all';
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.className = 'flex items-center space-x-2 px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all';
+        }
+      });
+
+      // Handle MathJax Re-rendering
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise();
+      }
+
+      // Re-trigger Canvas sizing when returning to Sim tab
+      if (targetKey === 'sim') {
+        setTimeout(() => {
+          resizeCanvas();
+        }, 50);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Global Simulation State Variables
+    // -------------------------------------------------------------
+    const sim = {
+      active: false,
+      stalled: false,
+      recovered: false,
+      latched: false,
+      extension: 0.08,    // meters (max 6.00 m)
+      theta: 0.12,         // phase angle / fraction (0 to 1.0)
+      force: 18.4,         // N
+      temp: 140.0,         // K
+      ambientTemp: 80.0,   // K (penumbra / shadow)
+      primaryHeater: false,
+      pulseHeater: false,
+      pulseTimer: 0,
+      pulsesFired: 0,
+      latchReqForce: 85.0, // N
+      pulseAmp: 32.0,      // Amperes
+      watchdogEnabled: true,
+      time: 0,
+      stallCooldown: 0
+    };
+
+    // Chart Time Series Data Buffers
+    const maxDataPoints = 30;
+    const timeLabels = [];
+    const forceHistory = [];
+    const tempHistory = [];
+    const pulseHistory = [];
+
+    for (let i = 0; i < maxDataPoints; i++) {
+      timeLabels.push(`-${(maxDataPoints - i) * 0.4}s`);
+      forceHistory.push(18.4);
+      tempHistory.push(140);
+      pulseHistory.push(0);
+    }
+
+    // -------------------------------------------------------------
+    // HTML5 Canvas Hardware Rendering (SMA Boom + Deployment Bay)
+    // -------------------------------------------------------------
+    const canvas = document.getElementById('boomCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = rect.width || 600;
+      const h = rect.height || 320;
+      
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function renderSimulationFrame() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 600;
+      const h = rect.height || 320;
+
+      // 1. Dark Space Background
+      ctx.fillStyle = '#030612';
+      ctx.fillRect(0, 0, w, h);
+
+      // Distant Stars
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      const starSeeds = [
+        [w * 0.15, h * 0.2], [w * 0.35, h * 0.12], [w * 0.65, h * 0.25], 
+        [w * 0.85, h * 0.15], [w * 0.92, h * 0.68], [w * 0.42, h * 0.78],
+        [w * 0.08, h * 0.82], [w * 0.78, h * 0.88]
+      ];
+      starSeeds.forEach(([x, y]) => {
+        ctx.fillRect(x, y, 1.5, 1.5);
+      });
+
+      // 2. Spacecraft Canister Deployment Bay (Left Base)
+      const canisterW = 110;
+      const canisterH = 130;
+      const canisterX = 30;
+      const canisterY = h / 2 - canisterH / 2;
+
+      // Outer satellite bulkhead
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(canisterX - 20, canisterY - 15, canisterW, canisterH + 30, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      // Gold Multi-Layer Insulation (MLI) Foil Texture
+      ctx.fillStyle = '#785507';
+      ctx.fillRect(canisterX - 15, canisterY, 20, canisterH);
+      for (let i = canisterY; i < canisterY + canisterH; i += 12) {
+        ctx.strokeStyle = '#b48a1c';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(canisterX - 15, i);
+        ctx.lineTo(canisterX + 5, i + 6);
+        ctx.stroke();
+      }
+
+      // Canister Drum Roll Spool
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(canisterX + 50, h / 2, 42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Coiled SMA Ribbon inside spool
+      ctx.strokeStyle = sim.stalled ? '#f59e0b' : (sim.pulseHeater ? '#c084fc' : '#38bdf8');
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(canisterX + 50, h / 2, 28, 0, Math.PI * 1.5);
+      ctx.stroke();
+
+      // Canister Exit Throat / Guide Rollers
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.arc(canisterX + canisterW - 10, h / 2 - 20, 8, 0, Math.PI * 2);
+      ctx.arc(canisterX + canisterW - 10, h / 2 + 20, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3. Slit-Tube Extended Boom (Dynamic Length)
+      const boomStartX = canisterX + canisterW - 10;
+      const maxVisualLength = w - boomStartX - 90;
+      const currentVisualLen = 25 + (sim.extension / 6.00) * maxVisualLength;
+      const boomEndX = boomStartX + currentVisualLen;
+      const boomY = h / 2;
+
+      // Ambient Shadow Zone Indicator
+      if (sim.stalled) {
+        const gradShadow = ctx.createLinearGradient(boomStartX + currentVisualLen * 0.4, 0, boomStartX + currentVisualLen, 0);
+        gradShadow.addColorStop(0, 'rgba(30, 58, 138, 0)');
+        gradShadow.addColorStop(1, 'rgba(15, 23, 42, 0.7)');
+        ctx.fillStyle = gradShadow;
+        ctx.fillRect(boomStartX + currentVisualLen * 0.4, boomY - 45, currentVisualLen * 0.6, 90);
+
+        // Cold Zone Label
+        ctx.fillStyle = '#93c5fd';
+        ctx.font = '10px "JetBrains Mono"';
+        ctx.fillText('COLD SHADOW BOUNDARY (80K)', boomStartX + currentVisualLen * 0.45, boomY - 28);
+      }
+
+      // Draw the Slit-Tube Composite Boom
+      const boomThickness = 12;
+      const boomGrad = ctx.createLinearGradient(0, boomY - boomThickness, 0, boomY + boomThickness);
+      if (sim.pulseHeater) {
+        boomGrad.addColorStop(0, '#c084fc');
+        boomGrad.addColorStop(0.5, '#f3e8ff');
+        boomGrad.addColorStop(1, '#9333ea');
+      } else if (sim.stalled) {
+        boomGrad.addColorStop(0, '#78350f');
+        boomGrad.addColorStop(0.5, '#fbbf24');
+        boomGrad.addColorStop(1, '#92400e');
+      } else {
+        boomGrad.addColorStop(0, '#0369a1');
+        boomGrad.addColorStop(0.5, '#7dd3fc');
+        boomGrad.addColorStop(1, '#0c4a6e');
+      }
+
+      ctx.fillStyle = boomGrad;
+      ctx.beginPath();
+      ctx.roundRect(boomStartX, boomY - boomThickness / 2, currentVisualLen, boomThickness, 3);
+      ctx.fill();
+
+      // Centerline SMA NiTiNOL Trigger Wire
+      ctx.strokeStyle = sim.pulseHeater ? '#ffffff' : (sim.stalled ? '#f43f5e' : '#38bdf8');
+      ctx.lineWidth = sim.pulseHeater ? 3 : 1.5;
+      ctx.beginPath();
+      ctx.moveTo(boomStartX, boomY);
+      ctx.lineTo(boomEndX, boomY);
+      ctx.stroke();
+
+      // Electrical Pulse Sparks (during pulse intervention)
+      if (sim.pulseHeater) {
+        ctx.fillStyle = '#e879f9';
+        for (let s = 0; s < 5; s++) {
+          const sparkX = boomStartX + Math.random() * currentVisualLen;
+          const sparkY = boomY + (Math.random() - 0.5) * 18;
+          ctx.beginPath();
+          ctx.arc(sparkX, sparkY, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 4. Boom Tip Payload & Latching Mechanism
+      const tipX = boomEndX;
+      const tipY = boomY;
+
+      // Tip Head Structure
+      ctx.fillStyle = sim.latched ? '#10b981' : (sim.stalled ? '#f59e0b' : '#38bdf8');
+      ctx.beginPath();
+      ctx.roundRect(tipX, tipY - 18, 16, 36, 4);
+      ctx.fill();
+
+      // Deep Space Science Antenna / Sub-reflector on Boom End
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(tipX + 16, tipY);
+      ctx.lineTo(tipX + 45, tipY - 26);
+      ctx.moveTo(tipX + 16, tipY);
+      ctx.lineTo(tipX + 45, tipY + 26);
+      ctx.stroke();
+
+      // Antenna Dipole Feedhorn
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.arc(tipX + 45, tipY - 26, 3, 0, Math.PI * 2);
+      ctx.arc(tipX + 45, tipY + 26, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. Locking Latch & Micro-Pawl Visualizer
+      ctx.save();
+      ctx.translate(tipX + 16, tipY);
+      if (sim.latched) {
+        // Locked Pawl
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.moveTo(0, -6);
+        ctx.lineTo(8, -2);
+        ctx.lineTo(8, 2);
+        ctx.lineTo(0, 6);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 11px "JetBrains Mono"';
+        ctx.fillText('LATCH ENGAGED (100% LOCK)', -40, 38);
+      } else {
+        // Unseated / Floating Pin
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(4, (Math.sin(sim.time * 8) * 3), 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = sim.stalled ? '#fbbf24' : '#64748b';
+        ctx.font = '10px "JetBrains Mono"';
+        ctx.fillText(sim.stalled ? 'STALL: FORCE < 85N' : 'ADVANCING...', -30, 36);
+      }
+      ctx.restore();
+    }
+
+    // -------------------------------------------------------------
+    // Chart.js Diagnostic Phase Space & Telemetry Configuration
+    // -------------------------------------------------------------
+    let hysteresisChart, forceTimeChart, tempTimeChart;
+
+    function initCharts() {
+      // 1. Primary Phase Space Scatter Chart (Force vs. Theta)
+      const ctxHyst = document.getElementById('hysteresisChart').getContext('2d');
+
+      // Nominal baseline hysteresis corridor points
+      const nominalLine = [
+        { x: 0.05, y: 15 },
+        { x: 0.20, y: 22 },
+        { x: 0.40, y: 34 },
+        { x: 0.60, y: 52 },
+        { x: 0.75, y: 74 },
+        { x: 0.88, y: 92 },
+        { x: 0.98, y: 105 }
+      ];
+
+      // Critical Latch Force Threshold horizontal boundary
+      const latchThresholdLine = [
+        { x: 0.0, y: 85 },
+        { x: 1.0, y: 85 }
+      ];
+
+      hysteresisChart = new Chart(ctxHyst, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              label: 'Nominal Martensite->Austenite Recovery',
+              data: nominalLine,
+              showLine: true,
+              borderColor: 'rgba(56, 189, 248, 0.5)',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              pointRadius: 0,
+              tension: 0.3
+            },
+            {
+              label: 'Minimum Latch Threshold (85 N)',
+              data: latchThresholdLine,
+              showLine: true,
+              borderColor: 'rgba(245, 158, 11, 0.7)',
+              borderWidth: 1.5,
+              borderDash: [6, 4],
+              pointRadius: 0
+            },
+            {
+              label: 'Live Phase Trajectory (F, θ)',
+              data: [{ x: sim.theta, y: sim.force }],
+              backgroundColor: '#38bdf8',
+              borderColor: '#ffffff',
+              borderWidth: 2,
+              pointRadius: 6,
+              pointHoverRadius: 8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 0 },
+          scales: {
+            x: {
+              min: 0.0,
+              max: 1.05,
+              title: {
+                display: true,
+                text: 'Austenitic Phase Fraction θ (rad / norm)',
+                color: '#94a3b8',
+                font: { size: 10, family: 'JetBrains Mono' }
+              },
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } }
+            },
+            y: {
+              min: 0,
+              max: 120,
+              title: {
+                display: true,
+                text: 'Recovery Force F (N)',
+                color: '#94a3b8',
+                font: { size: 10, family: 'JetBrains Mono' }
+              },
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `θ: ${context.parsed.x.toFixed(2)} rad | F: ${context.parsed.y.toFixed(1)} N`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Telemetry Plot 1: Force Time Series
+      const ctxForce = document.getElementById('forceTimeChart').getContext('2d');
+      forceTimeChart = new Chart(ctxForce, {
+        type: 'line',
+        data: {
+          labels: timeLabels,
+          datasets: [{
+            label: 'Force (N)',
+            data: forceHistory,
+            borderColor: '#fbbf24',
+            backgroundColor: 'rgba(251, 191, 36, 0.1)',
+            fill: true,
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 0 },
+          scales: {
+            x: { display: false },
+            y: {
+              min: 0,
+              max: 120,
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8', font: { size: 9, family: 'JetBrains Mono' } }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      // 3. Telemetry Plot 2: Temp & Current Injection
+      const ctxTemp = document.getElementById('tempTimeChart').getContext('2d');
+      tempTimeChart = new Chart(ctxTemp, {
+        type: 'line',
+        data: {
+          labels: timeLabels,
+          datasets: [
+            {
+              label: 'Wire Temp (K)',
+              data: tempHistory,
+              borderColor: '#f43f5e',
+              borderWidth: 2,
+              tension: 0.2,
+              pointRadius: 0,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Pulse Current (A)',
+              data: pulseHistory,
+              borderColor: '#a855f7',
+              backgroundColor: 'rgba(168, 85, 247, 0.2)',
+              fill: true,
+              borderWidth: 1.5,
+              pointRadius: 0,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 0 },
+          scales: {
+            x: { display: false },
+            y: {
+              min: 60,
+              max: 380,
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#f43f5e', font: { size: 8, family: 'JetBrains Mono' } }
+            },
+            y1: {
+              position: 'right',
+              min: 0,
+              max: 50,
+              grid: { display: false },
+              ticks: { color: '#a855f7', font: { size: 8, family: 'JetBrains Mono' } }
+            }
+          },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Core Physics Update Loop (Executed at 25 Hz / 40 ms)
+    // -------------------------------------------------------------
+    let tickCount = 0;
+
+    function stepPhysics() {
+      sim.time += 0.04;
+      tickCount++;
+
+      if (sim.active) {
+        // 1. Primary Heating Dynamics
+        if (!sim.stalled) {
+          // Normal thermal heating driving Martensite to Austenite
+          const targetTemp = 355; // K (Above Af = 345 K)
+          sim.temp += (targetTemp - sim.temp) * 0.05;
+
+          // Theta follows temperature progression
+          const targetTheta = Math.min(1.0, Math.max(0.1, (sim.temp - 120) / (345 - 120)));
+          sim.theta += (targetTheta - sim.theta) * 0.06;
+
+          // Force generated by phase conversion
+          const baseForce = 15 + sim.theta * 92;
+          sim.force += (baseForce - sim.force) * 0.07;
+
+          // Physical deployment extension
+          if (sim.extension < 6.00) {
+            sim.extension += 0.035 * (sim.force / 45);
+            if (sim.extension > 6.00) sim.extension = 6.00;
+          }
+
+          // Check for Latch Engagement
+          if (sim.extension >= 5.85 && sim.force >= sim.latchReqForce) {
+            sim.latched = true;
+            sim.active = false; // Deployment complete!
+          }
+
+        } else {
+          // --- STALLED CONDITION (Cold Shadow Anomaly) ---
+          // Deep space shadow drains heat rapidly
+          sim.temp += (sim.ambientTemp - sim.temp) * 0.06;
+
+          // Phase freezes at intermediate stall level
+          const stallTheta = 0.52;
+          sim.theta += (stallTheta - sim.theta) * 0.05;
+
+          // Force drops below latching requirement
+          const stallForce = 44.0;
+          sim.force += (stallForce - sim.force) * 0.06;
+
+          // Mechanical extension stalls
+          if (sim.extension > 3.4) sim.extension = 3.4;
+
+          // --- SENTINEL AUTONOMOUS RECOVERY WATCHDOG ---
+          // Condition: Phase velocity near 0, Force < LatchReq, Autonomous Enabled
+          if (sim.watchdogEnabled && !sim.pulseHeater) {
+            sim.stallCooldown += 0.04;
+            if (sim.stallCooldown > 1.2) {
+              // FIRE RECOVERY SECONDARY PULSE
+              fireSentinelPulse();
+              sim.stallCooldown = 0;
+            }
+          }
+        }
+
+        // 2. Secondary Pulse Transient Dynamics
+        if (sim.pulseHeater) {
+          sim.pulseTimer -= 0.04;
+          // Pulse forces temperature spike
+          sim.temp += 18.0;
+          sim.theta += 0.07;
+          sim.force += 8.5;
+          sim.extension += 0.08;
+
+          if (sim.pulseTimer <= 0) {
+            sim.pulseHeater = false;
+            // Breakthrough overcomes stall!
+            sim.stalled = false;
+            sim.recovered = true;
+          }
+        }
+      }
+
+      // Update Telemetry Buffers every 4 ticks (~160ms) to conserve rendering
+      if (tickCount % 4 === 0) {
+        forceHistory.shift();
+        forceHistory.push(sim.force);
+
+        tempHistory.shift();
+        tempHistory.push(sim.temp);
+
+        pulseHistory.shift();
+        pulseHistory.push(sim.pulseHeater ? sim.pulseAmp : 0);
+
+        updateUIHUD();
+      }
+
+      // Always render visual simulation canvas
+      renderSimulationFrame();
+    }
+
+    // -------------------------------------------------------------
+    // Autonomous Pulse Injection Trigger
+    // -------------------------------------------------------------
+    function fireSentinelPulse() {
+      sim.pulseHeater = true;
+      sim.pulseTimer = 0.45; // 450 ms pulse burst
+      sim.pulsesFired++;
+
+      // UI indicator
+      const alertBox = document.getElementById('hudPulseAlert');
+      if (alertBox) alertBox.classList.remove('hidden');
+
+      setTimeout(() => {
+        if (alertBox) alertBox.classList.add('hidden');
+      }, 700);
+    }
+
+    // -------------------------------------------------------------
+    // UI HUD Metric Synchronizer
+    // -------------------------------------------------------------
+    function updateUIHUD() {
+      document.getElementById('statTheta').innerText = sim.theta.toFixed(2);
+      document.getElementById('barTheta').style.width = Math.min(100, Math.max(0, sim.theta * 100)) + '%';
+
+      document.getElementById('statForce').innerText = sim.force.toFixed(1);
+      document.getElementById('barForce').style.width = Math.min(100, (sim.force / 110) * 100) + '%';
+
+      document.getElementById('statTemp').innerText = Math.round(sim.temp);
+      document.getElementById('barTemp').style.width = Math.min(100, (sim.temp / 380) * 100) + '%';
+
+      document.getElementById('hudExtension').innerText = `${sim.extension.toFixed(2)} m / 6.00 m`;
+
+      // Status tags & badges
+      const tag = document.getElementById('simStateTag');
+      const latchText = document.getElementById('hudLatch');
+      const shadowText = document.getElementById('hudShadow');
+
+      if (sim.latched) {
+        tag.className = 'text-[11px] mono px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 font-bold';
+        tag.innerText = 'BOOM FULLY LATCHED (MISSION READY)';
+        latchText.className = 'text-emerald-400 font-bold';
+        latchText.innerText = 'LATCHED (MICRO-PAWLS 100% ENGAGED)';
+        shadowText.innerText = 'DIRECT SOLAR INSOLATION (345 K)';
+      } else if (sim.stalled) {
+        tag.className = 'text-[11px] mono px-2.5 py-0.5 rounded-full bg-amber-950 border border-amber-600 text-amber-300 font-bold animate-pulse';
+        tag.innerText = 'PHASE RECOVERY STALL DETECTED';
+        latchText.className = 'text-amber-400 font-bold';
+        latchText.innerText = 'BLOCKED (FORCE < LATCH THRESHOLD)';
+        shadowText.innerText = `PENUMBRA OCCULTATION (${Math.round(sim.ambientTemp)} K)`;
+      } else if (sim.active) {
+        tag.className = 'text-[11px] mono px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-300';
+        tag.innerText = 'DEPLOYING: HEATING SMA TRIGGER WIRE';
+        latchText.className = 'text-slate-400';
+        latchText.innerText = 'APPROACHING LATCH DETENTS';
+      }
+
+      // Sentinel Pulse Stats
+      const statPulses = document.getElementById('statPulses');
+      const pulseCount = document.getElementById('statPulseCount');
+      const barPulses = document.getElementById('barPulses');
+
+      if (sim.pulseHeater) {
+        statPulses.innerText = 'INJECTING 34A';
+        statPulses.className = 'text-2xl font-bold mono text-violet-300 animate-pulse';
+        barPulses.style.width = '100%';
+      } else if (sim.pulsesFired > 0) {
+        statPulses.innerText = 'RECOVERED';
+        statPulses.className = 'text-2xl font-bold mono text-emerald-300';
+        barPulses.style.width = '100%';
+      } else {
+        statPulses.innerText = 'STANDBY';
+        statPulses.className = 'text-2xl font-bold mono text-slate-400';
+        barPulses.style.width = '0%';
+      }
+      pulseCount.innerText = `${sim.pulsesFired} Pulses Fired`;
+
+      // Update Chart.js datasets
+      if (hysteresisChart) {
+        hysteresisChart.data.datasets[2].data = [{ x: sim.theta, y: sim.force }];
+        if (sim.stalled) {
+          hysteresisChart.data.datasets[2].backgroundColor = '#f59e0b';
+        } else if (sim.pulseHeater) {
+          hysteresisChart.data.datasets[2].backgroundColor = '#c084fc';
+        } else {
+          hysteresisChart.data.datasets[2].backgroundColor = '#38bdf8';
+        }
+        hysteresisChart.update('none');
+      }
+
+      if (forceTimeChart) {
+        forceTimeChart.update('none');
+      }
+
+      if (tempTimeChart) {
+        tempTimeChart.update('none');
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Interactive User Controls & Fault Injections
+    // -------------------------------------------------------------
+    function toggleDeployment() {
+      if (sim.latched) return;
+      sim.active = !sim.active;
+      const btnText = document.getElementById('btnStartDeployText');
+      if (sim.active) {
+        btnText.innerText = 'Pause Deployment';
+      } else {
+        btnText.innerText = 'Resume Deployment';
+      }
+    }
+
+    function injectShadowAnomaly() {
+      if (!sim.active && !sim.latched) sim.active = true;
+      sim.stalled = true;
+      sim.recovered = false;
+      sim.ambientTemp = 80; // Sudden penumbra occultation
+    }
+
+    function resetSimulation() {
+      sim.active = false;
+      sim.stalled = false;
+      sim.recovered = false;
+      sim.latched = false;
+      sim.extension = 0.08;
+      sim.theta = 0.12;
+      sim.force = 18.4;
+      sim.temp = 140.0;
+      sim.ambientTemp = 80.0;
+      sim.pulseHeater = false;
+      sim.pulsesFired = 0;
+      sim.stallCooldown = 0;
+
+      document.getElementById('btnStartDeployText').innerText = 'Initiate Solar Deployment';
+      document.getElementById('simStateTag').innerText = 'STOWED IN CANISTER';
+      document.getElementById('simStateTag').className = 'text-[11px] mono px-2.5 py-0.5 rounded-full bg-blue-900/40 border border-blue-700/60 text-blue-300';
+      
+      updateUIHUD();
+    }
+
+    function updateEnvironment() {
+      const val = document.getElementById('sliderAmbient').value;
+      sim.ambientTemp = parseFloat(val);
+      document.getElementById('valAmbient').innerText = `${val} K`;
+    }
+
+    function updateLatchReq(val) {
+      sim.latchReqForce = parseFloat(val);
+      if (hysteresisChart) {
+        hysteresisChart.data.datasets[1].data = [
+          { x: 0.0, y: sim.latchReqForce },
+          { x: 1.0, y: sim.latchReqForce }
+        ];
+        hysteresisChart.update('none');
+      }
+    }
+
+    document.getElementById('toggleAutoSentinel').addEventListener('change', function(e) {
+      sim.watchdogEnabled = e.target.checked;
+      const badge = document.getElementById('quickStatusBadge');
+      if (sim.watchdogEnabled) {
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> NOMINAL AUTONOMY';
+        badge.className = 'text-emerald-400 font-semibold flex items-center justify-end gap-1';
+      } else {
+        badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> MANUAL OVERRIDE';
+        badge.className = 'text-amber-400 font-semibold flex items-center justify-end gap-1';
+      }
+    });
+
+    // -------------------------------------------------------------
+    // Boot Initialization on Load
+    // -------------------------------------------------------------
+    window.onload = function() {
+      resizeCanvas();
+      initCharts();
+      updateUIHUD();
+
+      // Run 25 Hz deterministic physics ticker (40 ms)
+      setInterval(stepPhysics, 40);
+    };
+  </script>
+</body>
+</html>
